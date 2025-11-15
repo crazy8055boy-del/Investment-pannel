@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Panel — PayByMe Returns</title>
+  <style>
+    :root {
+      --bg1: #002f6c;
+      --bg2: #007bff;
+      --card: rgba(255,255,255,0.95);
+    }
+    body {
+      margin:0;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      color: #111;
+      min-height: 100vh;
+    }
+    header {
+      padding: 18px 20px;
+      color: white;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background: rgba(0,0,0,0.08);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 { margin:0; font-size:20px; }
+    header .right { display:flex; gap:12px; align-items:center; }
+    header button {
+      background:#fff; color:#0056b3; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600;
+    }
+
+    .wrap { max-width:1200px; margin:22px auto; padding:0 16px; }
+
+    .card {
+      background: rgba(255,255,255,0.95);
+      border-radius:12px;
+      padding:16px;
+      margin-bottom:18px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+
+    .row { display:flex; gap:18px; flex-wrap:wrap; align-items:stretch; }
+
+    .col {
+      flex:1 1 300px;
+    }
+
+    h2 { margin:0 0 10px 0; color:#004e92; }
+
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { padding:10px 8px; border-bottom:1px solid rgba(0,0,0,0.06); text-align:left; }
+    th { background:#007bff; color:white; position:sticky; top:0; }
+    .small { font-size:13px; color:#555; }
+
+    .btn {
+      padding:6px 10px; border-radius:8px; border:none; cursor:pointer; font-weight:600;
+    }
+    .btn-approve { background:#00b300; color:white; }
+    .btn-reject { background:#ff3b3b; color:white; }
+    .btn-edit { background:#007bff; color:white; }
+    .btn-danger { background:#cc0000; color:white; }
+    .btn-neutral { background:#e0e0e0; color:#333; }
+
+    input[type="number"], input[type="text"] { padding:6px 8px; border-radius:6px; border:1px solid #ccc; width:120px; }
+
+    .flex-row { display:flex; gap:8px; align-items:center; }
+    .muted { color:#666; font-size:13px; }
+
+    .top-stats { display:flex; gap:12px; margin-bottom:10px; }
+    .stat { background:linear-gradient(180deg, rgba(0,123,255,0.08), rgba(0,123,255,0.02)); padding:12px; border-radius:8px; flex:1; text-align:center; }
+    .stat h3 { margin:0; color:#004e92; }
+    .stat p { margin:6px 0 0 0; font-weight:700; }
+
+    @media (max-width:820px) {
+      .row { flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Admin Panel — PayByMe Returns</h1>
+    <div class="right">
+      <div class="muted" id="adminEmailDisplay">Checking...</div>
+      <button id="runDailyBtn">Run Daily Credit</button>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="card top-stats">
+      <div class="stat">
+        <h3 id="totalUsers">Users</h3>
+        <p id="totalUsersVal">0</p>
+      </div>
+      <div class="stat">
+        <h3 id="activePlans">Active Plans</h3>
+        <p id="activePlansVal">0</p>
+      </div>
+      <div class="stat">
+        <h3 id="totalBalance">Total Balance</h3>
+        <p id="totalBalanceVal">₹0</p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col card">
+        <h2>Registered Users</h2>
+        <table id="usersTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Mobile</th>
+              <th>Plan</th>
+              <th>Balance (₹)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="col card">
+        <h2>Pending Payments</h2>
+        <table id="pendingPaymentsTable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Plan</th>
+              <th>Amount</th>
+              <th>Txn ID</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Pending Withdrawals</h2>
+      <table id="pendingWithdrawalsTable">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Amount (₹)</th>
+            <th>Bank</th>
+            <th>IFSC</th>
+            <th>Account</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Firebase v10 modular -->
+  <script type="module">
+    // Imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getFirestore, collection, doc, getDoc, getDocs, onSnapshot,
+      addDoc, updateDoc, deleteDoc, serverTimestamp, query, where
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    // Your Firebase Config (confirmed)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLYyK43tlZ6P0kALq1XkidgxwjUFeTOf8",
+      authDomain: "paybyme-returns.firebaseapp.com",
+      projectId: "paybyme-returns",
+      storageBucket: "paybyme-returns.firebasestorage.app",
+      messagingSenderId: "819165645817",
+      appId: "1:819165645817:web:571a1108f2c96162454b28",
+      measurementId: "G-36DP8ZM19F"
+    };
+
+    // Initialize
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Admin email constant (as you set)
+    const ADMIN_EMAIL = "varunapostle@gmail.com";
+
+    // DOM refs
+    const adminEmailDisplay = document.getElementById('adminEmailDisplay');
+    const usersTbody = document.querySelector('#usersTable tbody');
+    const pendingPaymentsTbody = document.querySelector('#pendingPaymentsTable tbody');
+    const pendingWithdrawalsTbody = document.querySelector('#pendingWithdrawalsTable tbody');
+    const totalUsersVal = document.getElementById('totalUsersVal');
+    const activePlansVal = document.getElementById('activePlansVal');
+    const totalBalanceVal = document.getElementById('totalBalanceVal');
+
+    // Auth guard: allow only admin
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // not logged in -> redirect to auth page
+        window.location.href = "index.html";
+        return;
+      }
+      // check email or role
+      const userEmail = user.email || "";
+      adminEmailDisplay.textContent = userEmail;
+      if (userEmail !== ADMIN_EMAIL) {
+        // Also check if user doc has role: "admin"
+        try {
+          const udoc = await getDoc(doc(db, 'users', user.uid));
+          if (!udoc.exists() || udoc.data().role !== 'admin') {
+            alert("Access denied — admin only.");
+            signOut(auth);
+            window.location.href = "index.html";
+            return;
+          }
+        } catch (e) {
+          console.error(e);
+          alert("Access check failed.");
+          signOut(auth);
+          window.location.href = "index.html";
+          return;
+        }
+      }
+
+      // If reached here, admin is authenticated — initialize listeners
+      initListeners();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = "index.html";
+    });
+
+    // Initialize real-time listeners
+    function initListeners() {
+      loadUsersRealtime();
+      loadPendingPaymentsRealtime();
+      loadPendingWithdrawalsRealtime();
+      computeStats();
+    }
+
+    // ----------------- Users -----------------
+    function loadUsersRealtime() {
+      const usersCol = collection(db, 'users');
+      onSnapshot(usersCol, (snap) => {
+        usersTbody.innerHTML = '';
+        let totalUsers = 0, activePlans = 0, totalBalance = 0;
+        snap.forEach(docSnap => {
+          totalUsers++;
+          const u = docSnap.data();
+          const uid = docSnap.id;
+          const tr = document.createElement('tr');
+
+          const planLabel = u.planAmount ? `₹${u.planAmount} (${u.planStatus||'active'})` : '—';
+          if (u.planStatus === 'active') activePlans++;
+          totalBalance += Number(u.balance || 0);
+
+          tr.innerHTML = `
+            <td>${u.name || '—'}</td>
+            <td>${u.email || '—'}</td>
+            <td>${u.mobile || '—'}</td>
+            <td>${planLabel}</td>
+            <td>₹${u.balance || 0}</td>
+            <td class="flex-row">
+              <button class="btn btn-edit" data-uid="${uid}" data-action="edit">Edit</button>
+              <button class="btn btn-neutral" data-uid="${uid}" data-action="reset">Reset</button>
+              <button class="btn btn-danger" data-uid="${uid}" data-action="delete">Delete</button>
+            </td>
+          `;
+          usersTbody.appendChild(tr);
+        });
+
+        totalUsersVal.textContent = totalUsers;
+        activePlansVal.textContent = activePlans;
+        totalBalanceVal.textContent = `₹${totalBalance}`;
+        attachUserButtons();
+      }, (err)=>console.error('users snapshot err', err));
+    }
+
+    // attach buttons for edit/reset/delete
+    function attachUserButtons() {
+      document.querySelectorAll('#usersTable button').forEach(btn => {
+        btn.onclick = async (e) => {
+          const uid = btn.dataset.uid;
+          const action = btn.dataset.action;
+          if (action === 'edit') {
+            const value = prompt('Enter amount to ADD (use negative to subtract). Example: 100 or -50');
+            if (value === null) return;
+            const delta = Number(value);
+            if (isNaN(delta)) { alert('Invalid number'); return; }
+            const uRef = doc(db, 'users', uid);
+            const uSnap = await getDoc(uRef);
+            if (!uSnap.exists()) { alert('User not found'); return; }
+            const newBal = (Number(uSnap.data().balance || 0) + delta);
+            await updateDoc(uRef, { balance: newBal });
+            alert('Balance updated: ₹' + newBal);
+          } else if (action === 'reset') {
+            if (!confirm('Reset balance to 0 for this user?')) return;
+            await updateDoc(doc(db,'users',uid), { balance: 0 });
+            alert('Balance reset.');
+          } else if (action === 'delete') {
+            if (!confirm('Delete this user permanently? This cannot be undone.')) return;
+            // delete user doc only (auth deletion must be from console or admin SDK)
+            await deleteDoc(doc(db,'users',uid));
+            alert('User record deleted from Firestore.');
+          }
+        };
+      });
+    }
+
+    // ----------------- Pending Payments -----------------
+    function loadPendingPaymentsRealtime() {
+      const paymentsCol = collection(db, 'pendingPayments');
+      onSnapshot(paymentsCol, (snap) => {
+        pendingPaymentsTbody.innerHTML = '';
+        snap.forEach(docSnap => {
+          const p = docSnap.data();
+          const id = docSnap.id;
+          const tr = document.createElement('tr');
+          const userDisplay = p.userId || p.userEmail || '—';
+          tr.innerHTML = `
+            <td>${userDisplay}</td>
+            <td>${p.planName || '—'}</td>
+            <td>₹${p.price || p.planAmount || 0}</td>
+            <td>${p.transactionId || p.txnId || '—'}</td>
+            <td>${p.createdAt ? (new Date(p.createdAt.seconds*1000).toLocaleString()) : (p.date || '—')}</td>
+            <td>${p.status || 'pending'}</td>
+            <td>
+              <button class="btn btn-approve" data-id="${id}" data-action="approve">Approve</button>
+              <button class="btn btn-reject" data-id="${id}" data-action="reject">Reject</button>
+            </td>
+          `;
+          pendingPaymentsTbody.appendChild(tr);
+        });
+        attachPendingPaymentButtons();
+      }, err => console.error('pending payments snap err', err));
+    }
+
+    function attachPendingPaymentButtons() {
+      document.querySelectorAll('#pendingPaymentsTable .btn').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.id;
+          const action = btn.dataset.action;
+          if (action === 'approve') {
+            if (!confirm('Approve this payment and activate plan for user?')) return;
+            await approvePayment(id);
+          } else {
+            if (!confirm('Reject this payment request?')) return;
+            await rejectPayment(id);
+          }
+        };
+      });
+    }
+
+    // Approve payment: create investment record + activate user plan + update pendingPayments doc
+    async function approvePayment(pendingId) {
+      try {
+        const pRef = doc(db, 'pendingPayments', pendingId);
+        const pSnap = await getDoc(pRef);
+        if (!pSnap.exists()) { alert('Payment not found'); return; }
+        const p = pSnap.data();
+
+        // determine fields
+        const userId = p.userId;
+        const price = Number(p.price || p.planAmount || 0);
+        const planKey = p.planKey || null;
+        const daily = Number(p.dailyReturn || p.daily || getDailyFromPrice(price));
+        const duration = Number(p.duration || 129);
+        const totalIncome = daily * duration;
+
+        // create investment doc
+        await addDoc(collection(db, 'investments'), {
+          userId,
+          planKey,
+          planName: p.planName || '',
+          price,
+          dailyReturn: daily,
+          duration,
+          totalIncome,
+          status: 'active',
+          startDate: serverTimestamp(),
+          nextPayoutDate: serverTimestamp(),
+          paidDays: 0,
+          pendingPaymentId: pendingId
+        });
+
+        // update pendingPayments status
+        await updateDoc(pRef, { status: 'approved', approvedAt: serverTimestamp() });
+
+        // activate user plan
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+          planAmount: price,
+          dailyIncome: daily,
+          planStartDate: serverTimestamp(),
+          lastCreditDate: serverTimestamp(),
+          planStatus: 'active'
+        });
+
+        // give referral commission if applicable (15% of price)
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const referredByCode = userData.referredBy || userData.inviteCodeUsed || userData.inviteCode || userData.referredByCode;
+          // find referrer by inviteCode (if provided as referrer code in payment doc)
+          if (userData.referredBy) {
+            // search users where inviteCode == referredBy
+            const q = query(collection(db,'users'), where('inviteCode','==', userData.referredBy));
+            const refSnap = await getDocs(q);
+            refSnap.forEach(async r => {
+              const commission = Math.round(price * 0.15);
+              await updateDoc(doc(db,'users', r.id), { balance: (Number((r.data().balance||0))) + commission });
+              // add ledger record
+              await addDoc(collection(db, 'ledger'), {
+                userId: r.id,
+                type: 'commission',
+                amount: commission,
+                fromUser: userId,
+                createdAt: serverTimestamp()
+              });
+            });
+          }
+        }
+
+        alert('Payment approved and plan activated.');
+      } catch (e) {
+        console.error('approvePayment err', e);
+        alert('Error approving payment: ' + e.message);
+      }
+    }
+
+    async function rejectPayment(pendingId) {
+      try {
+        await updateDoc(doc(db,'pendingPayments', pendingId), { status: 'rejected', rejectedAt: serverTimestamp() });
+        alert('Payment rejected.');
+      } catch (e) {
+        console.error(e);
+        alert('Error rejecting payment.');
+      }
+    }
+
+    // helper: map price to daily
+    function getDailyFromPrice(price) {
+      if (price === 380) return 80;
+      if (price === 750) return 160;
+      if (price === 1140) return 240;
+      if (price === 1480) return 360;
+      return Math.round(price * 0.1); // fallback
+    }
+
+    // ----------------- Pending Withdrawals -----------------
+    function loadPendingWithdrawalsRealtime() {
+      const col = collection(db,'pendingWithdrawals');
+      onSnapshot(col, (snap) => {
+        pendingWithdrawalsTbody.innerHTML = '';
+        snap.forEach(docSnap => {
+          const w = docSnap.data();
+          const id = docSnap.id;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${w.userId || w.userEmail || '—'}</td>
+            <td>₹${w.amount || 0}</td>
+            <td>${w.bankName || '—'}</td>
+            <td>${w.ifsc || '—'}</td>
+            <td>${(w.accountNumber ? 'xxxx' + (w.accountNumber+'').slice(-4) : '—')}</td>
+            <td>${w.createdAt ? (new Date(w.createdAt.seconds*1000).toLocaleString()) : (w.date||'—')}</td>
+            <td>
+              <button class="btn btn-approve" data-id="${id}" data-action="approve">Approve</button>
+              <button class="btn btn-reject" data-id="${id}" data-action="reject">Reject</button>
+            </td>
+          `;
+          pendingWithdrawalsTbody.appendChild(tr);
+        });
+        attachWithdrawButtons();
+      }, err=>console.error('withdraw snap err', err));
+    }
+
+    function attachWithdrawButtons() {
+      document.querySelectorAll('#pendingWithdrawalsTable .btn').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.id;
+          const action = btn.dataset.action;
+          if (action === 'approve') {
+            if (!confirm('Approve this withdrawal? This will deduct amount from user balance.')) return;
+            await approveWithdrawal(id);
+          } else {
+            if (!confirm('Reject and remove this withdrawal request?')) return;
+            await rejectWithdrawal(id);
+          }
+        };
+      });
+    }
+
+    async function approveWithdrawal(withdrawId) {
+      try {
+        const wRef = doc(db,'pendingWithdrawals', withdrawId);
+        const wSnap = await getDoc(wRef);
+        if (!wSnap.exists()) { alert('Withdrawal not found'); return; }
+        const w = wSnap.data();
+        const userRef = doc(db,'users', w.userId);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) { alert('User not found'); return; }
+        const userData = userSnap.data();
+        const newBalance = Number(userData.balance || 0) - Number(w.amount || 0);
+        if (newBalance < 0) {
+          alert('Insufficient balance for this user.');
+          return;
+        }
+        // deduct balance
+        await updateDoc(userRef, { balance: newBalance });
+        // mark withdrawal approved
+        await updateDoc(wRef, { status: 'approved', approvedAt: serverTimestamp() });
+        // add ledger
+        await addDoc(collection(db,'ledger'), {
+          userId: w.userId,
+          type: 'withdrawal',
+          amount: Number(w.amount || 0),
+          createdAt: serverTimestamp()
+        });
+        alert('Withdrawal approved and balance deducted.');
+      } catch (e) {
+        console.error(e);
+        alert('Error approving withdrawal: ' + e.message);
+      }
+    }
+
+    async function rejectWithdrawal(withdrawId) {
+      try {
+        await updateDoc(doc(db,'pendingWithdrawals', withdrawId), { status: 'rejected', rejectedAt: serverTimestamp() });
+        alert('Withdrawal rejected.');
+      } catch (e) {
+        console.error(e);
+        alert('Error rejecting withdrawal.');
+      }
+    }
+
+    // ----------------- Manual Daily Credit Runner -----------------
+    document.getElementById('runDailyBtn').addEventListener('click', async () => {
+      if (!confirm('Run daily credit for all active investments now?')) return;
+      await runDailyCredit();
+    });
+
+    async function runDailyCredit() {
+      try {
+        const invCol = collection(db,'investments');
+        // get active investments
+     

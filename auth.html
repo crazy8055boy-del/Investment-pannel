@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PayByMe - Login & Register</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { margin:0; padding:0; background: linear-gradient(135deg,#004e92,#000428); height:100vh; display:flex; justify-content:center; align-items:center; }
+    .container { background:white; width:380px; padding:30px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.25); text-align:center; }
+    h2 { color:#004e92; margin-bottom:12px; }
+    input { width:90%; padding:10px; margin:8px 0; border-radius:8px; border:1px solid #ccc; font-size:14px; }
+    button { width:95%; padding:12px; background:#004e92; color:#fff; border:none; border-radius:8px; font-size:16px; cursor:pointer; margin-top:8px; }
+    button:hover { background:#0066cc; }
+    .toggle-link { margin-top:12px; color:#004e92; cursor:pointer; text-decoration:underline; }
+    .error { color:red; font-size:13px; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 id="formTitle">Login</h2>
+
+    <div id="loginForm">
+      <input type="email" id="loginEmail" placeholder="Enter your email" required />
+      <input type="password" id="loginPassword" placeholder="Enter your password" required />
+      <button onclick="login()">Login</button>
+      <div id="loginError" class="error"></div>
+      <p class="toggle-link" onclick="toggleForm()">New user? Register here</p>
+    </div>
+
+    <div id="registerForm" style="display:none;">
+      <input type="text" id="regName" placeholder="Full Name" required />
+      <input type="email" id="regEmail" placeholder="Email" required />
+      <input type="text" id="regMobile" placeholder="Mobile Number" required />
+      <input type="password" id="regPassword" placeholder="Password" required />
+      <input type="password" id="regConfirmPassword" placeholder="Confirm Password" required />
+      <input type="text" id="regInviteCode" placeholder="Invite Code (optional)" />
+      <button onclick="register()">Register</button>
+      <div id="registerError" class="error"></div>
+      <p class="toggle-link" onclick="toggleForm()">Already have an account? Login</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    // ✅ Firebase Config (use your confirmed config)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLYyK43tlZ6P0kALq1XkidgxwjUFeTOf8",
+      authDomain: "paybyme-returns.firebaseapp.com",
+      projectId: "paybyme-returns",
+      storageBucket: "paybyme-returns.firebasestorage.app",
+      messagingSenderId: "819165645817",
+      appId: "1:819165645817:web:571a1108f2c96162454b28",
+      measurementId: "G-36DP8ZM19F"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ---- ADMIN CREDENTIALS (hardcoded as you requested) ----
+    // WARNING: Storing credentials in client-side code is insecure.
+    const ADMIN_EMAIL = "varunapostle@gmail.com";
+    const ADMIN_PASSWORD = "Varun181105";
+    // -------------------------------------------------------
+
+    // Toggle forms
+    window.toggleForm = function() {
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const title = document.getElementById("formTitle");
+      if (loginForm.style.display === "none") {
+        loginForm.style.display = "block";
+        registerForm.style.display = "none";
+        title.textContent = "Login";
+        document.getElementById("loginError").textContent = "";
+      } else {
+        loginForm.style.display = "none";
+        registerForm.style.display = "block";
+        title.textContent = "Register";
+        document.getElementById("registerError").textContent = "";
+      }
+    };
+
+    // Register function (normal users)
+    window.register = function() {
+      const name = document.getElementById("regName").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const mobile = document.getElementById("regMobile").value.trim();
+      const password = document.getElementById("regPassword").value;
+      const confirm = document.getElementById("regConfirmPassword").value;
+      const invite = document.getElementById("regInviteCode").value.trim();
+      const errorBox = document.getElementById("registerError");
+
+      errorBox.textContent = "";
+      if (!name || !email || !mobile || !password || !confirm) {
+        errorBox.textContent = "All fields are required.";
+        return;
+      }
+      if (password !== confirm) {
+        errorBox.textContent = "Passwords do not match.";
+        return;
+      }
+
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(async (userCred) => {
+          const u = userCred.user;
+          // create user doc in Firestore
+          await setDoc(doc(db, "users", u.uid), {
+            name, email, mobile, inviteCode: invite || null,
+            balance: 0, planStatus: null, createdAt: new Date()
+          });
+          
+          // ✨ बदलाव यहाँ है: सफल रजिस्ट्रेशन के बाद सीधे डैशबोर्ड पर रीडायरेक्ट करें
+          window.location.href = "dashboard.html";
+        })
+        .catch((err) => {
+          errorBox.textContent = err.message || "Registration failed.";
+        });
+    };
+
+    // Login function (admin check + normal user)
+    window.login = function() {
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      const errorBox = document.getElementById("loginError");
+      errorBox.textContent = "";
+
+      if (!email || !password) {
+        errorBox.textContent = "Please enter both email and password.";
+        return;
+      }
+
+      // FIRST: check if entered credentials exactly match hardcoded admin credentials
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        // Try to sign in admin via Firebase auth
+        signInWithEmailAndPassword(auth, email, password)
+          .then(() => {
+            // successful sign in (admin exists)
+            window.location.href = "admin.html";
+          })
+          .catch(async (signInErr) => {
+            // If admin user not found in Firebase, create admin account automatically
+            if (signInErr.code === 'auth/user-not-found') {
+              try {
+                const userCred = await createUserWithEmailAndPassword(auth, email, password);
+                const u = userCred.user;
+                // create an admin user doc in Firestore with role
+                await setDoc(doc(db, "users", u.uid), {
+                  name: "Admin",
+                  email,
+                  mobile: null,
+                  inviteCode: null,
+                  balance: 0,
+                  role: "admin",
+                  planStatus: null,
+                  createdAt: new Date()
+                });
+                // redirect to admin panel
+                window.location.href = "admin.html";
+              } catch (createErr) {
+                errorBox.textContent = createErr.message || "Admin creation failed.";
+              }
+            } else {
+              // other errors (wrong password etc.)
+              errorBox.textContent = "Admin sign-in failed: " + (signInErr.message || signInErr.code);
+            }
+          });
+
+        return; // stop further normal login flow
+      }
+
+      // NORMAL USER LOGIN FLOW (for non-admin)
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => {
+          // ✨ बदलाव यहाँ है: सामान्य उपयोगकर्ता को सीधे डैशबोर्ड पर रीडायरेक्ट करें
+          window.location.href = "dashboard.html";
+        })
+        .catch((err) => {
+          errorBox.textContent = "Invalid email or password.";
+        });
+    };
+  </script>
+</body>
+</html>

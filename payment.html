@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment - PayByMe Returns</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #007bff, #00c6ff);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      color: #333;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+    img {
+      width: 220px;
+      margin: 10px 0;
+      border-radius: 10px;
+    }
+    input, select {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Complete Your Payment</h2>
+    <img src="slice_qr.jpg" alt="Slice QR Code" />
+    <p><strong>Account holder:</strong> Varun Yadav<br>
+    <strong>UPI ID:</strong> varunapostle@slc</p>
+
+    <label for="plan">Select Investment Plan:</label>
+    <select id="plan">
+      <option value="380">₹380 Plan (₹80/day)</option>
+      <option value="750">₹750 Plan (₹160/day)</option>
+      <option value="1140">₹1140 Plan (₹240/day)</option>
+      <option value="1480">₹1480 Plan (₹360/day)</option>
+    </select>
+
+    <input type="text" id="txnId" placeholder="Enter Transaction ID" />
+    <button onclick="submitPayment()">Submit Payment</button>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    // ✅ Your Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLYyK43tlZ6P0kALq1XkidgxwjUFeTOf8",
+      authDomain: "paybyme-returns.firebaseapp.com",
+      projectId: "paybyme-returns",
+      storageBucket: "paybyme-returns.firebasestorage.app",
+      messagingSenderId: "819165645817",
+      appId: "1:819165645817:web:571a1108f2c96162454b28",
+      measurementId: "G-36DP8ZM19F"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    async function submitPayment() {
+      const txnId = document.getElementById("txnId").value.trim();
+      const plan = document.getElementById("plan").value;
+
+      if (!txnId) {
+        alert("⚠️ Please enter Transaction ID!");
+        return;
+      }
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          alert("Please login first!");
+          window.location.href = "login.html";
+          return;
+        }
+
+        // Daily return based on plan
+        let dailyReturn = 0;
+        if (plan == 380) dailyReturn = 80;
+        else if (plan == 750) dailyReturn = 160;
+        else if (plan == 1140) dailyReturn = 240;
+        else if (plan == 1480) dailyReturn = 360;
+
+        // Save payment request
+        await addDoc(collection(db, "pendingPayments"), {
+          userId: user.uid,
+          planAmount: Number(plan),
+          dailyReturn,
+          txnId,
+          date: new Date().toISOString(),
+          status: "Pending"
+        });
+
+        alert("✅ Payment submitted successfully! Waiting for admin approval.");
+        window.location.href = "pending.html";
+      });
+    }
+  </script>
+</body>
+</html>

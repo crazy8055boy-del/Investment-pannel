@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Contact Us - PayByMe Returns</title>
+  <style>
+    :root{
+      --bg1:#002f6c;
+      --bg2:#007bff;
+    }
+    body{
+      margin:0;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      color:#fff;
+      height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .card{
+      background: rgba(255,255,255,0.06);
+      padding:32px;
+      border-radius:16px;
+      text-align:center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+      width:90%;
+      max-width:540px;
+    }
+
+    /* WhatsApp title: largest, bold, green */
+    .title {
+      font-size: 52px;            /* largest */
+      font-weight: 800;          /* bold */
+      color: #25D366;            /* WhatsApp green */
+      margin: 8px 0 18px 0;
+      line-height:1;
+      letter-spacing: 1px;
+    }
+
+    /* Phone number: red and prominent */
+    .phone {
+      font-size: 34px;
+      font-weight: 700;
+      color: #ff3b3b;            /* red */
+      margin-bottom: 14px;
+    }
+
+    .sub {
+      font-size:14px;
+      color: rgba(255,255,255,0.85);
+      margin-bottom:18px;
+    }
+
+    .actions a {
+      display:inline-block;
+      margin:8px 6px;
+      padding:10px 18px;
+      border-radius:10px;
+      text-decoration:none;
+      font-weight:700;
+    }
+
+    .wa-btn {
+      background: #25D366;
+      color: #02260f;
+    }
+
+    .call-btn {
+      background: #ff3b3b;
+      color: #fff;
+    }
+
+    /* small responsive tweaks */
+    @media (max-width:420px){
+      .title{ font-size:40px; }
+      .phone{ font-size:28px; }
+      .card{ padding:20px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main" aria-labelledby="contactTitle">
+    <h1 id="contactTitle" class="title">WhatsApp</h1>
+
+    <div class="phone">90277 65517</div>
+
+    <p class="sub">Message or call on WhatsApp — we'll reply ASAP.</p>
+
+    <div class="actions">
+      <!-- WhatsApp chat link (opens wa.me). Remove the spaces in number for wa.me -->
+      <a class="wa-btn" href="https://wa.me/919027765517" target="_blank" rel="noopener noreferrer">
+        Open WhatsApp Chat
+      </a>
+
+      <!-- Direct phone call -->
+      <a class="call-btn" href="tel:+919027765517">
+        Call Now
+      </a>
+    </div>
+  </main>
+</body>
+</html>

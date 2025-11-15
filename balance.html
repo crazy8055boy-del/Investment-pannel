@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Balance | PayByMe Returns</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #0072ff, #00c6ff);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .box {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 25px;
+      border-radius: 20px;
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+    }
+
+    .info {
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 10px;
+      margin: 8px 0;
+      font-size: 1.05rem;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 25px;
+      font-weight: bold;
+      color: white;
+      background-color: #0039cc;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #002c99;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>💰 My Balance</h1>
+    <div class="info" id="username">Name: Loading...</div>
+    <div class="info" id="plan">Plan: ₹0</div>
+    <div class="info" id="daily">Daily Income: ₹0/day</div>
+    <div class="info" id="totalEarnings">Total Earnings: ₹0</div>
+    <div class="info" id="balance">Current Balance: ₹0</div>
+    <button onclick="window.location.href='withdraw.html'">Withdraw</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLYyK43tlZ6P0kALq1XkidgxwjUFeTOf8",
+      authDomain: "paybyme-returns.firebaseapp.com",
+      projectId: "paybyme-returns",
+      storageBucket: "paybyme-returns.firebasestorage.app",
+      messagingSenderId: "819165645817",
+      appId: "1:819165645817:web:571a1108f2c96162454b28",
+      measurementId: "G-36DP8ZM19F"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    function daysBetween(d1, d2) {
+      const diff = d2.getTime() - d1.getTime();
+      return Math.floor(diff / (1000 * 60 * 60 * 24));
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const ref = doc(db, "users", user.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const data = snap.data();
+
+          document.getElementById("username").textContent = `Name: ${data.name || "Unknown"}`;
+          document.getElementById("plan").textContent = `Plan: ₹${data.planAmount || 0}`;
+          document.getElementById("daily").textContent = `Daily Income: ₹${data.dailyIncome || 0}/day`;
+          document.getElementById("totalEarnings").textContent = `Total Earnings: ₹${data.totalEarnings || 0}`;
+          document.getElementById("balance").textContent = `Current Balance: ₹${data.balance || 0}`;
+
+          // Check daily credit
+          if (data.planStartDate && data.lastCreditDate) {
+            const last = data.lastCreditDate.toDate();
+            const now = new Date();
+            const days = daysBetween(last, now);
+
+            if (days >= 1) {
+              const addAmount = days * (data.dailyIncome || 0);
+              const newBal = (data.balance || 0) + addAmount;
+              const newEarn = (data.totalEarnings || 0) + addAmount;
+
+              await updateDoc(ref, {
+                balance: newBal,
+                totalEarnings: newEarn,
+                lastCreditDate: Timestamp.now()
+              });
+
+              document.getElementById("balance").textContent = `Current Balance: ₹${newBal}`;
+              document.getElementById("totalEarnings").textContent = `Total Earnings: ₹${newEarn}`;
+            }
+          }
+        }
+      } else {
+        alert("Please login first!");
+        window.location.href = "index.html";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Refer & Earn - PayByMe Returns</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #0047ab, #001a4d);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: rgba(255,255,255,0.1);
+      padding: 30px;
+      border-radius: 15px;
+      width: 360px;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+    h2 {
+      color: #fff;
+      margin-bottom: 15px;
+    }
+    .code-box {
+      background: rgba(255,255,255,0.15);
+      padding: 12px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    button {
+      background: #007bff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .logout {
+      margin-top: 20px;
+      color: #ccc;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Refer & Earn 💸</h2>
+    <p>Share your invite code and earn <b>15%</b> of your friend’s investment!</p>
+
+    <div>
+      <h3>Your Invite Code:</h3>
+      <div id="inviteCode" class="code-box">Loading...</div>
+
+      <h3>Your Refer Link:</h3>
+      <div id="inviteLink" class="code-box">Loading...</div>
+
+      <button onclick="copyLink()">Copy Link</button>
+      <div class="logout" onclick="logout()">Logout</div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+
+  <script>
+    // ✅ Your Confirmed Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLYyK43tlZ6P0kALq1XkidgxwjUFeTOf8",
+      authDomain: "paybyme-returns.firebaseapp.com",
+      projectId: "paybyme-returns",
+      storageBucket: "paybyme-returns.firebasestorage.app",
+      messagingSenderId: "819165645817",
+      appId: "1:819165645817:web:571a1108f2c96162454b28",
+      measurementId: "G-36DP8ZM19F"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Dummy logged-in user (you'll replace this with real login session)
+    const currentUserMobile = localStorage.getItem("mobile");
+
+    if (!currentUserMobile) {
+      alert("please login");
+      window.location.href = "index.html";
+    }
+
+    async function loadUser() {
+      const doc = await db.collection("users").doc(currentUserMobile).get();
+      if (!doc.exists) {
+        alert("User not found!");
+        return;
+      }
+      const user = doc.data();
+      let code = user.inviteCode;
+
+      // please create a code if user not create a code
+      if (!code) {
+        code = "REF" + Math.floor(1000 + Math.random() * 9000);
+        await db.collection("users").doc(currentUserMobile).update({
+          inviteCode: code
+        });
+      }
+
+      document.getElementById("inviteCode").innerText = code;
+      const link = window.location.origin + "/index.html?invite=" + code;
+      document.getElementById("inviteLink").innerText = link;
+    }
+
+    function copyLink() {
+      const link = document.getElementById("inviteLink").innerText;
+      navigator.clipboard.writeText(link);
+      alert("✅ Refer link copied!");
+    }
+
+    function logout() {
+      localStorage.removeItem("mobile");
+      window.location.href = "index.html";
+    }
+
+    loadUser();
+  </script>
+</body>
+</html>

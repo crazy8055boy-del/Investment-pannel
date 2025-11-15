@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard - PayByMe Returns</title>
+  <style>
+    :root {
+      --blue1:#002f6c;
+      --blue2:#007bff;
+      --card-bg: rgba(255,255,255,0.08);
+      --white: #ffffff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg,var(--blue1),var(--blue2));
+      color:var(--white);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    header {
+      padding:18px 22px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    header .left { font-weight:800; font-size:20px; color:#fff; }
+    header .right { text-align:right; }
+    header .right p { margin:0; color:rgba(255,255,255,0.9); font-weight:700; }
+    header .right small { display:block; color:rgba(255,255,255,0.75); font-size:13px; margin-top:4px; }
+
+    .wrap { max-width:1100px; margin:20px auto; padding:0 16px; }
+
+    /* options grid */
+    .options {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+      margin:18px 0;
+    }
+    .opt {
+      background:var(--card-bg);
+      border-radius:12px;
+      padding:20px;
+      text-align:center;
+      cursor:pointer;
+      transition:transform .18s ease, background .18s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      min-height:120px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+    }
+    .opt:hover{ transform:translateY(-6px); background: rgba(255,255,255,0.12); }
+    .opt .big { font-size:44px; font-weight:900; color:#fff; letter-spacing:2px; }
+    .opt small { display:block; margin-top:8px; color:rgba(255,255,255,0.95); font-weight:800; font-size:16px; }
+
+    /* products */
+    .products {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
+      gap:16px;
+      margin-top:6px;
+    }
+    .product {
+      background: rgba(255,255,255,0.06);
+      border-radius:12px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      min-height:360px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .product .imgwrap { background: #fff; padding:18px; display:flex; align-items:center; justify-content:center; }
+    .product img{ max-width:100%; max-height:200px; object-fit:contain; border-radius:8px; }
+    .product .info { padding:16px; text-align:left; color:#fff; }
+    .product h3 { margin:0 0 6px 0; font-size:18px; color:#fff; }
+    .product p { margin:6px 0; font-size:14px; color:rgba(255,255,255,0.92); }
+    .product .actions { padding:14px; display:flex; gap:10px; justify-content:space-between; align-items:center; }
+    .btn {
+      padding:10px 14px;
+      border-radius:10px;
+      border:none;
+      cursor:pointer;
+      font-weight:800;
+    }
+    .btn-invest { background:#25D366; color:#042b15; }
+    .btn-details { background: rgba(255,255,255,0.12); color:#fff; }
+
+    footer { text-align:center; color:rgba(255,255,255,0.8); margin:28px 0 60px 0; font-size:13px; }
+
+    @media (max-width:880px){
+      .options { grid-template-columns:repeat(2,1fr); }
+    }
+    @media (max-width:520px){
+      .options { grid-template-columns:repeat(1,1fr); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="left">Pay By Me Returns</div>
+    <div class="right">
+      <p id="welcome">Welcome, User</p>
+      <small id="emailSmall"></small>
+    </div>
+  </header>
+
+  <main class="wrap" role="main" aria-labelledby="dashboardTitle">
+    <h2 id="dashboardTitle" style="color:rgba(255,255,255,0.95); margin:8px 4px 10px 4px;">Dashboard</h2>
+
+    <!-- options -->
+    <section class="options" aria-label="main options">
+      <div class="opt" aria-label="Recharge" onclick="goTo('payment.html')">
+        <div class="big">R</div>
+        <small>Recharge</small>
+      </div>
+
+      <div class="opt" aria-label="Balance" onclick="goTo('balance.html')">
+        <div class="big">B</div>
+        <small>Balance</small>
+      </div>
+
+      <div class="opt" aria-label="Pending" onclick="goTo('pending.html')">
+        <div class="big">P</div>
+        <small>Pending</small>
+      </div>
+
+      <div class="opt" aria-label="Referral" onclick="goTo('referral.html')">
+        <div class="big">R</div>
+        <small>Referral & Earn</small>
+      </div>
+
+      <div class="opt" aria-label="Withdraw" onclick="goTo('withdraw.html')">
+        <div class="big">W</div>
+        <small>Withdraw</small>
+      </div>
+
+      <div class="opt" aria-label="Contact" onclick="goTo('contact.html')">
+        <div class="big">C</div>
+        <small>Contact Us</small>
+      </div>
+    </section>
+
+    <!-- products -->
+    <section class="products" aria-label="products list">
+      <!-- Plan B: S24 Ultra -->
+      <article class="product" id="prod-ultra">
+        <div class="imgwrap">
+          <img src="s24_ultra.jpg" alt="Samsung Galaxy S24 Ultra 5G">
+        </div>
+        <div class="info">
+          <h3>Samsung Galaxy S24 Ultra 5G</h3>
+          <p>Price: ₹750</p>
+          <p>Daily Return: ₹160 / day</p>
+          <p>Duration: 129 days</p>
+          <p><strong>Total Income:</strong> ₹160 × 129 = ₹20,640</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-invest" onclick="invest('b')">Invest Now</button>
+          <button class="btn btn-details" onclick="details('Samsung Galaxy S24 Ultra 5G')">Details</button>
+        </div>
+      </article>
+
+      <!-- Plan C: Z Fold 6 -->
+      <article class="product" id="prod-fold6">
+        <div class="imgwrap">
+          <img src="zfold6.jpg" alt="Samsung Galaxy Z Fold 6">
+        </div>
+        <div class="info">
+          <h3>Samsung Galaxy Z Fold 6</h3>
+          <p>Price: ₹1,140</p>
+          <p>Daily Return: ₹240 / day</p>
+          <p>Duration: 129 days</p>
+          <p><strong>Total Income:</strong> ₹240 × 129 = ₹30,960</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-invest" onclick="invest('c')">Invest Now</button>
+          <button class="btn btn-details" onclick="details('Samsung Galaxy Z Fold 6')">Details</button>
+        </div>
+      </article>
+
+      <!-- Plan A: S24 -->
+      <article class="product" id="prod-s24">
+        <div class="imgwrap">
+          <img src="s24.jpg" alt="Samsung Galaxy S24 5G">
+        </div>
+        <div class="info">
+          <h3>Samsung Galaxy S24 5G</h3>
+          <p>Price: ₹380</p>
+          <p>Daily Return: ₹80 / day</p>
+          <p>Duration: 129 days</p>
+          <p><strong>Total Income:</strong> ₹80 × 129 = ₹10,320</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-invest" onclick="invest('a')">Invest Now</button>
+          <button class="btn btn-details" onclick="details('Samsung Galaxy S24 5G')">Details</button>
+        </div>
+      </article>
+
+      <!-- Plan D: Z Fold 7 -->
+      <article class="product" id="prod-fold7">
+        <div class="imgwrap">
+          <img src="zfold7.jpg" alt="Samsung Galaxy Z Fold 7">
+        </div>
+        <div class="info">
+          <h3>Samsung Galaxy Z Fold 7</h3>
+          <p>Price: ₹1,480</p>
+          <p>Daily Return: ₹320 / day</p>
+          <p>Duration: 129 days</p>
+          <p><strong>Total Income:</strong> ₹320 × 129 = ₹41,280</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-invest" onclick="invest('d')">Invest Now</button>
+          <button class="btn btn-details" onclick="details('Samsung Galaxy Z Fold 7')">Details</button>
+        </div>
+      </article>
+    </section>
+
+    <footer>
+      © 2025 PayByMe Returns
+    </footer>
+  </main>
+
+  <!-- Firebase (auth -> to get username). Uses your config. -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    // Your Firebase Config (final)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLYyK43tlZ6P0kALq1XkidgxwjUFeTOf8",
+      authDomain: "paybyme-returns.firebaseapp.com",
+      projectId: "paybyme-returns",
+      storageBucket: "paybyme-returns.firebasestorage.app",
+      messagingSenderId: "819165645817",
+      appId: "1:819165645817:web:571a1108f2c96162454b28",
+      measurementId: "G-36DP8ZM19F"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Auth guard & show username
+    onAuthStateChanged(auth, (user) => {
+      const welcomeEl = document.getElementById('welcome');
+      const emailSmall = document.getElementById('emailSmall');
+      if (!user) {
+        // not logged in -> go to login/register
+        window.location.href = "index.html";
+        return;
+      }
+      // show displayName if present else email prefix
+      const name = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
+      welcomeEl.textContent = `Welcome, ${name}`;
+      emailSmall.textContent = user.email || '';
+    });
+
+    // navigation helpers
+    function goTo(href){
+      window.location.href = href;
+    }
+
+    // Invest redirects to payment page with plan query
+    function invest(planKey){
+      // planKey: a|b|c|d
+      window.location.href = `payment.html?plan=${planKey}`;
+    }
+
+    function details(title){
+      alert(title + "\nOpen product payment page to invest.");
+    }
+  </script>
+</body>
+</html>
